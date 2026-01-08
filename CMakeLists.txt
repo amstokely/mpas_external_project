@@ -4,13 +4,13 @@ include(ExternalProject)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules)
 
-find_package(PnetCDF REQUIRED)
-set(PNETCDF ${PnetCDF_PREFIX})
+find_package(MPI REQUIRED COMPONENTS Fortran C)
+find_package(PnetCDF REQUIRED COMPONENTS Fortran C)
 
 find_program(MAKE_EXE NAMES gmake nmake make)
 
 set(MPAS_TARGET gnu)
-set(MPAS_SHAREDLIB false)
+set(MPAS_SHAREDLIB true)
 set(MPAS_DEBUG false)
 set(MPAS_CORE atmosphere)
 set(MPAS_NJOBS 4)
@@ -25,11 +25,11 @@ ExternalProject_Add(mpas
         BUILD_IN_SOURCE TRUE
         CONFIGURE_COMMAND ""
         BUILD_COMMAND
-        ${CMAKE_COMMAND} -E env PNETCDF=${PNETCDF}
         ${MAKE_EXE} -j${MPAS_NJOBS} ${MPAS_TARGET}
         CORE=${MPAS_CORE}
         SHAREDLIB=${MPAS_SHAREDLIB}
         DEBUG=${MPAS_DEBUG}
+        AUTOCLEAN=true
 )
 
 file(GLOB_RECURSE MPAS_MOD_FILES
@@ -39,9 +39,10 @@ file(GLOB_RECURSE MPAS_MOD_FILES
 
 ExternalProject_Add_Step(mpas copy_mods
         COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/mod
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MPAS_MOD_FILES} ${CMAKE_BINARY_DIR}/mod
+        COMMAND ${CMAKE_COMMAND} -E copy ${MPAS_MOD_FILES} ${CMAKE_BINARY_DIR}/mod
         DEPENDEES build
 )
+
 
 file(GLOB_RECURSE MPAS_LIB_FILES
         CONFIGURE_DEPENDS
@@ -65,14 +66,26 @@ ExternalProject_Add_Step(mpas copy_core_exe
         DEPENDEES copy_libs
 )
 
-add_library(MPAS::mpas INTERFACE IMPORTED GLOBAL)
+add_library(MPAS INTERFACE)
 
-file(GLOB MPAS_LIBS
-        ${CMAKE_BINARY_DIR}/lib/*.a)
+target_link_directories(MPAS INTERFACE ${CMAKE_BINARY_DIR}/lib)
+target_include_directories(MPAS INTERFACE ${CMAKE_BINARY_DIR}/mod)
 
-set_target_properties(MPAS::mpas PROPERTIES
-        INTERFACE_LINK_LIBRARIES "${MPAS_LIBS}"
-        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_BINARY_DIR}/mod"
+target_link_libraries(MPAS INTERFACE
+        mpas_subdriver
+        framework
+        chem
+        dycore
+        esmf_time
+        ops
+        phys
+        smiol
+        smiolf
+        MPI::MPI_Fortran
+        PnetCDF::PnetCDF_Fortran
+        MPI::MPI_C
+        PnetCDF::PnetCDF_C
 )
 
-add_dependencies(MPAS::mpas mpas)
+add_executable(main main.f90)
+target_link_libraries(main PUBLIC MPAS)
