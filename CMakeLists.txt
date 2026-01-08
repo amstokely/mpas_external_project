@@ -20,8 +20,8 @@ set(MPAS_CORE_EXE "atmosphere_model")
 
 ExternalProject_Add(mpas
         SOURCE_DIR ${CMAKE_SOURCE_DIR}/MPAS
-        GIT_REPOSITORY https://github.com/MPAS-Dev/MPAS-Model
-        GIT_TAG develop
+        GIT_REPOSITORY https://github.com/amstokely/MPAS-Model
+        GIT_TAG libmpas_subdriver
         BUILD_IN_SOURCE TRUE
         CONFIGURE_COMMAND ""
         BUILD_COMMAND
