@@ -32,60 +32,18 @@ ExternalProject_Add(mpas
         AUTOCLEAN=true
 )
 
-file(GLOB_RECURSE MPAS_MOD_FILES
-        CONFIGURE_DEPENDS
-        ${MPAS_ROOT_DIR}/src/*.mod
+set(MPAS_ROOT_DIR ${CMAKE_SOURCE_DIR}/MPAS)
+set(MOD_DIR "${CMAKE_BINARY_DIR}/mod")
+set(LIB_DIR "${CMAKE_BINARY_DIR}/lib")
+
+add_custom_target(copy_mpas_artifacts ALL
+        COMMAND ${CMAKE_COMMAND}
+        -DMPAS_ROOT_DIR=${MPAS_ROOT_DIR}
+        -DLIB_DIR=${LIB_DIR}
+        -DMOD_DIR=${MOD_DIR}
+        -P ${CMAKE_SOURCE_DIR}/cmake/copy_mpas_artifacts.cmake
 )
 
-ExternalProject_Add_Step(mpas copy_mods
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/mod
-        COMMAND ${CMAKE_COMMAND} -E copy ${MPAS_MOD_FILES} ${CMAKE_BINARY_DIR}/mod
-        DEPENDEES build
-)
 
+#add_dependencies(copy_mpas_artifacts mpas)
 
-file(GLOB_RECURSE MPAS_LIB_FILES
-        CONFIGURE_DEPENDS
-        ${MPAS_ROOT_DIR}/src/*.a
-)
-
-ExternalProject_Add_Step(mpas copy_libs
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/lib
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MPAS_LIB_FILES} ${CMAKE_BINARY_DIR}/lib
-        DEPENDEES copy_mods
-)
-
-file(GLOB_RECURSE MPAS_CORE_EXE
-        CONFIGURE_DEPENDS
-        ${MPAS_ROOT_DIR}/${MPAS_CORE_EXE}
-)
-
-ExternalProject_Add_Step(mpas copy_core_exe
-        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/bin
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MPAS_CORE_EXE} ${CMAKE_BINARY_DIR}/bin
-        DEPENDEES copy_libs
-)
-
-add_library(MPAS INTERFACE)
-
-target_link_directories(MPAS INTERFACE ${CMAKE_BINARY_DIR}/lib)
-target_include_directories(MPAS INTERFACE ${CMAKE_BINARY_DIR}/mod)
-
-target_link_libraries(MPAS INTERFACE
-        mpas_subdriver
-        framework
-        chem
-        dycore
-        esmf_time
-        ops
-        phys
-        smiol
-        smiolf
-        MPI::MPI_Fortran
-        PnetCDF::PnetCDF_Fortran
-        MPI::MPI_C
-        PnetCDF::PnetCDF_C
-)
-
-add_executable(main main.f90)
-target_link_libraries(main PUBLIC MPAS)
