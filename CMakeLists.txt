@@ -30,6 +30,7 @@ ExternalProject_Add(mpas
         SHAREDLIB=${MPAS_SHAREDLIB}
         DEBUG=${MPAS_DEBUG}
         AUTOCLEAN=true
+        INSTALL_COMMAND ""
 )
 
 set(MPAS_ROOT_DIR ${CMAKE_SOURCE_DIR}/MPAS)
@@ -45,5 +46,4 @@ add_custom_target(copy_mpas_artifacts ALL
 )
 
 
-#add_dependencies(copy_mpas_artifacts mpas)
-
+add_dependencies(copy_mpas_artifacts mpas)
